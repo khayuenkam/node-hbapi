@@ -47,11 +47,11 @@ app.get('/', function(req, res) {
   });
 });
 
-var regex = /^\/(news|style|arts|design|music|entertainment|lifestyle|tech|editorial|hypebeast-videos)$/
+var regex = /^\/(news|style|arts|design|music|entertainment|lifestyle|tech|editorial|hypebeast-videos){1}(\/page\/[0-9]+)?$/
 
 app.get(regex, function(req, res) {
   var url = host + req.path;
-  console.log(url);
+
   request(url, function(err, response, body) {
     if (err) { return; }
 
