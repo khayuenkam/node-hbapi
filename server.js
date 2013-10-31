@@ -65,6 +65,16 @@ app.get(/^\/(paper|magazine)$/, function(req, res) {
   console.log(req.path);
 });
 
+app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
+  var url = host + req.path;
+
+  request(url, function(err, response, body) {
+    if (err) { return; }
+
+    res.end();
+  });
+});
+
 http.createServer(app, function(req, res) {
   
 }).listen(4000);
