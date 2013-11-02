@@ -62,7 +62,16 @@ app.get(regex, function(req, res) {
 });
 
 app.get(/^\/(paper|magazine)$/, function(req, res) {
-  console.log(req.path);
+  var url = host + req.path;
+
+  request(url, function(err, response, body) {
+    if (err) { return; }
+
+    dom.publication(body, function(error , data) {
+      res.end();
+    })
+  });
+
 });
 
 app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
@@ -78,5 +87,5 @@ app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
 });
 
 http.createServer(app, function(req, res) {
-  
+   console.log('start server'); 
 }).listen(4000);
