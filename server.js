@@ -71,7 +71,9 @@ app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
   request(url, function(err, response, body) {
     if (err) { return; }
 
-    res.end();
+    dom.detail(body, function(error , data) {
+      res.end();
+    })
   });
 });
 
