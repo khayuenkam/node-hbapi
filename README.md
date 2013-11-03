@@ -1,7 +1,10 @@
 Unofficial Hypebeast.com API
 ============================
 This is a side project for me to learn Nodejs and web scrapping.
+
 Feel free to fork and contribute!
+
+API Documentation: https://github.com/khayuenkam/node-hbapi/wiki/API-Documentation
 
 How To Start
 =============
