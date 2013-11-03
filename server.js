@@ -6,31 +6,24 @@ nconf
   .file('config.json')
   .defaults({
     //redisUrl: 'redis://USERNAME:PASSWORD@HOST:PORT
+    port: 4000,
     targetHost: 'http://hypebeast.com',
     cacheExp: 60*15
   });
 
 var express = require('express');
 var winston = require('winston');
-var winst = require('winston-papertrail');
 var http = require('http');
 var request = require('request');
+var stringify = require('json-stringify-safe');
 var dom = require('./lib/dom');
 var Redis = require('./lib/redis');
-var app = express();
 
-var host = nconf.get('targetHost');
-var TTL = nconf.get('cacheExp');
+var httpPort = nconf.get('port')
+  , host = nconf.get('targetHost')
+  , TTL = nconf.get('cacheExp');
 
-app.use(express.compress());
-app.use(express.logger({
-  stream: {
-    write: function(msg, encoding) {
-      winston.info(msg);
-    }
-  }
-}));
-
+// Redis
 var redis = Redis({
   url: nconf.get('redisUrl'),
   onConnect: function() {
@@ -39,6 +32,50 @@ var redis = Redis({
   onError: function() {
     winston.error(err.toString() ? err.toString() : err);
   }
+});
+
+var errorHander = function(res, err) {
+  var errorMsg = err.message || JSON.parse(stringify(err));
+
+  winston.error(errorMsg);
+
+  if (!res.headerSent) {
+    res.jsonp({
+      error: errorMsg
+    });
+  }
+}
+
+var app = express();
+app.set('trust proxy', true);
+
+app.use(express.compress());
+app.use(express.logger({
+  stream: {
+    write: function(msg, encoding) {
+      winston.info(msg);
+    },
+  },
+  format: 'path=:url status=:status ip=:remote-addr response-ms=:response-time user-agent=:user-agent referrer=:referrer'
+}));
+
+app.use(function(req, res, next) {
+  res.setHeader('Cache-Control', 'public, max-age=' + TTL);
+  next();
+});
+
+// Timeout
+app.use(function(req, res, next) {
+  var timeout = setTimeout(function() {
+    winston.error('Server timeout: ' + req.url);
+    res.send(504);
+  }, 15000);
+
+  res.on('header', function() {
+    clearTimeout(timeout);
+  });
+
+  next();
 });
 
 app.get('/favicon.ico', function(req, res) {
@@ -74,9 +111,17 @@ app.get(regex, function(req, res) {
       res.jsonp(result);
     } else {
       request(url, function(err, response, body) {
-        if (err) { return; }
+        if (err) { 
+          errorHandler(res, err);
+          return; 
+        }
 
         dom.page(body, function(error, data) {
+          if (error) { 
+            errorHandler(res, error);
+            return; 
+          }
+
           redis.set(req.path, data, TTL);
           res.jsonp(data);
         });
@@ -93,10 +138,18 @@ app.get(/^\/(paper|magazine)$/, function(req, res) {
       res.jsonp(result);
     } else {
       request(url, function(err, response, body) {
-        if (err) { return; }
+        if (err) { 
+          errorHandler(res, err);
+          return; 
+        }
 
         dom.publication(body, function(error , data) {
-          redis.set(req.path, data, 60*60*24);
+          if (error) {
+            errorHandler(res, error);
+            return;
+          }
+
+          redis.set(req.path, data, TTL);
           res.jsonp(data);
         })
       });
@@ -112,9 +165,17 @@ app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
       res.jsonp(result);
     } else {
       request(url, function(err, response, body) {
-        if (err) { return; }
+        if (err) { 
+          errorHandler(res, err);
+          return;
+        }
 
         dom.detail(body, function(error , data) {
+          if (error) {
+            errorHandler(res, error);
+            return;
+          }
+
           redis.set(req.path, data, TTL);
           res.jsonp(data);
         })
@@ -124,4 +185,10 @@ app.get(/^\/[0-9]{4}\/([1-9]|1[0-2])\/[0-9a-zA-Z-]+$/, function(req, res) {
 });
 
 http.createServer(app, function(req, res) {
-}).listen(4000);
+
+}).listen(httpPort);
+
+process.on('uncaughtException', function (err) {
+  winston.error((new Date).toUTCString() + 'uncaughtException: ' + err.message);
+  process.exit(1);
+});
