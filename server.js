@@ -6,9 +6,7 @@ nconf
   .file('config.json')
   .defaults({
     //redisUrl: 'redis://USERNAME:PASSWORD@HOST:PORT
-    port: 4000,
-    targetHost: 'http://hypebeast.com',
-    cacheExp: 60*15
+    targetHost: 'http://hypebeast.com'
   });
 
 var express = require('express');
@@ -25,7 +23,8 @@ var httpPort = nconf.get('port')
 
 // Redis
 var redis = Redis({
-  url: nconf.get('redisUrl'),
+  url: nconf.get('redis:url'),
+  debug: nconf.get('redis:debug'),
   onConnect: function() {
     winston.info('Connected to redis server');
   },
