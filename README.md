@@ -11,6 +11,16 @@ How To Start
 4. node server.js
 5. Enjoy the api
 
+Configuration 
+==============
+Please change the configuration in config.json
+
+* port - (default: 4000) Server port
+* cacheExp - (default: 900) Cache expiry in seconds
+* redis 
+  * url - redis://USERNAME:PASSWORD@HOST:PORT for redis server
+  * debug - (default: false) Debugging for redis  
+
 License
 =======
 This app is licensed under the MIT license. The data is copyrighted by the hypebeast.com
