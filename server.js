@@ -24,7 +24,7 @@ var redis = Redis({
   debug: nconf.get('redis:debug')
 });
 
-var errorHander = function(res, err) {
+var errorHandler = function(res, err) {
   var errorMsg = err.message || JSON.parse(stringify(err));
 
   winston.error(errorMsg);
