@@ -10,6 +10,7 @@ var winston = require('winston');
 var http = require('http');
 var request = require('request');
 var stringify = require('json-stringify-safe');
+var cors = require('cors');
 var dom = require('./lib/dom');
 var Redis = require('./lib/redis');
 
@@ -38,20 +39,8 @@ var errorHander = function(res, err) {
 var app = express();
 app.set('trust proxy', true);
 
+app.use(cors());
 app.use(express.compress());
-app.use(express.logger({
-  stream: {
-    write: function(msg, encoding) {
-      winston.info(msg);
-    },
-  },
-  format: 'path=:url status=:status ip=:remote-addr response-ms=:response-time user-agent=:user-agent referrer=:referrer'
-}));
-
-app.use(function(req, res, next) {
-  res.setHeader('Cache-Control', 'public, max-age=' + TTL);
-  next();
-});
 
 // Timeout
 app.use(function(req, res, next) {
@@ -66,6 +55,20 @@ app.use(function(req, res, next) {
 
   next();
 });
+
+app.use(function(req, res, next) {
+  res.setHeader('Cache-Control', 'public, max-age=' + TTL);
+  next();
+});
+
+app.use(express.logger({
+  stream: {
+    write: function(msg, encoding) {
+      winston.info(msg);
+    },
+  },
+  format: 'path=:url status=:status ip=:remote-addr response-ms=:response-time user-agent=:user-agent referrer=:referrer'
+}));
 
 app.get('/favicon.ico', function(req, res) {
   res.send(204);
