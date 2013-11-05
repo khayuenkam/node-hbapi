@@ -3,11 +3,7 @@ var nconf = require('nconf')
 nconf
   .argv()
   .env()
-  .file('config.json')
-  .defaults({
-    //redisUrl: 'redis://USERNAME:PASSWORD@HOST:PORT
-    targetHost: 'http://hypebeast.com'
-  });
+  .file('config.json');
 
 var express = require('express');
 var winston = require('winston');
@@ -17,20 +13,14 @@ var stringify = require('json-stringify-safe');
 var dom = require('./lib/dom');
 var Redis = require('./lib/redis');
 
+var host = 'http://hypebeast.com';
 var httpPort = nconf.get('port')
-  , host = nconf.get('targetHost')
   , TTL = nconf.get('cacheExp');
 
 // Redis
 var redis = Redis({
   url: nconf.get('redis:url'),
-  debug: nconf.get('redis:debug'),
-  onConnect: function() {
-    winston.info('Connected to redis server');
-  },
-  onError: function() {
-    winston.error(err.toString() ? err.toString() : err);
-  }
+  debug: nconf.get('redis:debug')
 });
 
 var errorHander = function(res, err) {
